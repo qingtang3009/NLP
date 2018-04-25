@@ -1,0 +1,173 @@
+#此功能是将汉字转换成拼音
+from xpinyin import Pinyin
+p = Pinyin()
+'''
+# default split
+p.get_pinyin(u"上海")
+'shang-hai'
+# show tone marks
+p.get_pinyin(u"上海", show_tone_marks=True)
+'shàng-hǎi'
+# remove splitter
+p.get_pinyin(u"上海", '')
+'shanghai'
+# set splitter as whitespace
+p.get_pinyin(u"上海", ' ')
+'shang hai'
+p.get_initial(u"上")
+'S'
+p.get_initials(u"上海")
+'S-H'
+p.get_initials(u"上海", u'')
+'SH'
+p.get_initials(u"上海", u' ')
+'S H'
+'''
+with open('D:\Pycharm\PycharmProjects\date_for_DFA\chinese_dictionary.txt', 'r', encoding='utf-8') as r:
+    words = r.readlines()
+    print(' '.join(words))
+word_list = []
+for word in words:
+    word = word.strip()
+    # for i in word:
+    word_list.append(p.get_pinyin(word))
+# print('\n'.join(word_list))
+with open('D:\Pycharm\PycharmProjects\date_for_DFA\chinese_dictionary_pinyin.txt', 'w', encoding='utf-8') as w:
+    for i in range(len(word_list)):
+        w.write(word_list[i])
+        w.write('\n')
+    print('\n'.join(word_list))
+----------------------------------------------------------------------------------------------------------------------
+    
+#此功能是用于经HTK模块输出的比对文件中每个词的匹配准确率检测
+import re
+import jieba
+
+with open( 'D:\Pycharm\PycharmProjects\date_for_accuracy_of_judgment\dictionary.txt', 'r', encoding='utf-8') as r1:
+    line1 = r1.readlines()
+    print(line1)
+with open('D:\Pycharm\PycharmProjects\date_for_accuracy_of_judgment\date_with_disturb_htk.txt', 'r', encoding='utf-8') as r2:
+    line2 = r2.readlines()
+    text = r2.read()
+    for i in range(len(line2)):
+        line2[i] = re.sub(' ', '', line2[i])
+        print(line2[i])
+
+''' 
+    有个问题，如果全部一起替换，会造成整篇文档变成‘str’，无法使用readlines 
+    line = re.sub(' ', '', r2.read())
+    line2 = line.readlines()   #AttributeError: 'str' object has no attribute 'readlines'
+'''
+num = 0
+dic1 = {}
+dic2 = {}
+#找出参考中 词出现的次数
+for i in range(len(line1)):
+    for j in range(len(line2)):
+        if re.match('LAB',line2[j]):
+            num = num + len(re.findall(line1[i].strip(), line2[j]))    #这里必须使用strip()去除空格和尾部换行符，否则多数匹配不到
+    dic1[line1[i].strip()] = num
+    num = 0
+print(dic1)
+
+#找出实际预料中 词出现的次数
+for i in range(len(line1)):
+    for j in range(len(line2)):
+        if re.match('REC',line2[j]):
+            num = num + len(re.findall(line1[i].strip(), line2[j]))
+    dic2.setdefault(line1[i].strip(),num)
+    num = 0
+print(dic2)
+
+dic3 = {}
+for i in range(len(dic1)):
+    dic3.setdefault(line1[i].strip(), (dic1[line1[i].strip()] - dic2[line1[i].strip()]))
+print(dic3)
+with open('D:\Pycharm\PycharmProjects\date_for_accuracy_of_judgment\\accuracy.txt', 'w', encoding='utf-8') as w:
+    w.write(str(dic1))
+    w.write('\n')
+    w.write(str(dic2))
+    w.write('\n')
+    w.write(str(dic3))
+------------------------------------------------------------------------------------------------------------
+
+#此功能用于去除重复
+eliminate_list = []
+
+with open('D:\Pycharm\PycharmProjects\date_for_eliminate_redundancy\input.txt','r',encoding = 'utf-8') as r:
+    lines = r.readlines()
+
+for sentence in lines:
+    if sentence not in eliminate_list:
+        eliminate_list.append(sentence)
+
+print('\n'.join(eliminate_list))
+
+with open('D:\Pycharm\PycharmProjects\date_for_eliminate_redundancy\output.txt','w',encoding = 'utf-8') as o:
+    for i in range(len(eliminate_list)):
+        eliminate_list[i] = str(eliminate_list[i])
+        o.write(eliminate_list[i])
+--------------------------------------------------------------------------------------------------------------
+
+#此功能用于去除特殊符号
+import re
+#全文替换
+with open('D:\Pycharm\PycharmProjects\date_for_delete_special\input.txt','r',encoding = 'utf-8') as r:
+    line = r.read()
+
+p = re.compile(r'[\d\d\d\d\d\d\d\d\d\d]|[:]|[，]|[,]|[。]|[.]|[*]|[、]|[(]|[)]|[（]|[）]|[#]')
+
+find_list = []
+
+m = re.sub(p , '', line)
+find_list.append(m)
+print('\n'.join(find_list))               #打一个元素换一行
+
+with open('D:\Pycharm\PycharmProjects\date_for_delete_special\output.txt','w',encoding = 'utf-8') as o:
+    for i in range(len(find_list)):
+        o.write(find_list[i])
+---------------------------------------------------------------------------------------------------------
+
+#此功能用于中文分词
+import jieba
+
+jieba.load_userdict('D://Pycharm/PycharmProjects/date/userdict.txt')
+
+seg_list = []
+
+with open('D://Pycharm/PycharmProjects/date/shuju.txt','r',encoding='utf-8') as r:
+    lines = r.readlines()
+    print(lines)
+
+for i in range(len(lines)):
+    seg_p = jieba.cut(lines[i])
+    seg_list.append('/'.join(seg_p))
+    print(seg_list[i])
+
+with open('D://Pycharm/PycharmProjects/date/output.txt','w',encoding = 'utf-8') as o:
+    o.writelines(seg_list)
+------------------------------------------------------------------------------------------------------------------------
+
+#此功能用于选出HTK输出的参考和实际两行中的英文词
+import re
+
+with open("D:\Pycharm\PycharmProjects\date_for_pick_english_number_in_special_lines\input.txt", 'r', encoding = "utf-8") as r:
+    lines = r.readlines()
+
+pattern1 = (r' LAB| REC')
+pattern2 = (r'[a-z]+|[A-Z]+')
+find_list = []
+
+'''for i in range(len(lines)):
+    if re.match(pattern1, lines[i]) !=None :
+        find_list.append(re.findall(pattern2, lines[i]))
+'''
+for line in lines:
+    if re.match(pattern1,line):
+        find_list.append(re.findall(pattern2,line))
+
+with open("D:\Pycharm\PycharmProjects\date_for_pick_english_number_in_special_lines\output.txt", 'w', encoding = "utf-8") as o:
+    for i in range(len(find_list)):
+        o.writelines(' '.join(find_list[i])+'\n')   #这里必须用writelines，因为大列表包含小列表
+        print(' '.join(find_list[i]))
+
